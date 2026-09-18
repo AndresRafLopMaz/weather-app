@@ -1,4 +1,5 @@
-import { searchCities, getCurrentWeather } from './api.js';
+import { searchCities, getWeather } from './api.js';
+import { getWeatherDescription } from './weather-codes.js';
 
 const searchForm = document.querySelector('#city-search-form');
 const cityInput = document.querySelector('#city-query');
@@ -15,7 +16,9 @@ const weatherTemperature = document.querySelector('#weather-temperature');
 const weatherApparentTemperature = document.querySelector('#weather-apparent-temperature');
 const weatherHumidity = document.querySelector('#weather-humidity');
 const weatherWindSpeed = document.querySelector('#weather-wind-speed');
-const weatherCode = document.querySelector('#weather-code');
+const weatherCondition = document.querySelector('#weather-condition');
+const forecastSection = document.querySelector('#weather-forecast');
+const forecastDays = document.querySelector('#forecast-days');
 
 let cities = [];
 let isLoading = false;
@@ -48,8 +51,9 @@ function setWeatherStatus(message, isError = false) {
 
 function setWeatherLoading(loading) {
   isWeatherLoading = loading;
-  weatherButton.textContent = loading ? 'Consultando…' : 'Consultar clima actual';
+  weatherButton.textContent = loading ? 'Consultando…' : 'Consultar clima y pronóstico';
   weatherSection.setAttribute('aria-busy', String(loading));
+  forecastSection.setAttribute('aria-busy', String(loading));
   updateControls();
 }
 
@@ -60,7 +64,9 @@ function clearWeather() {
   weatherApparentTemperature.textContent = '';
   weatherHumidity.textContent = '';
   weatherWindSpeed.textContent = '';
-  weatherCode.textContent = '';
+  weatherCondition.textContent = '';
+  forecastSection.hidden = true;
+  forecastDays.replaceChildren();
   setWeatherStatus('');
 }
 
@@ -162,8 +168,46 @@ function showCurrentWeather(city, current) {
   weatherApparentTemperature.textContent = `${current.apparent_temperature} °C`;
   weatherHumidity.textContent = `${current.relative_humidity_2m} %`;
   weatherWindSpeed.textContent = `${current.wind_speed_10m} km/h`;
-  weatherCode.textContent = String(current.weather_code);
+  weatherCondition.textContent = getWeatherDescription(current.weather_code);
   weatherSection.hidden = false;
+}
+
+function formatForecastDate(date) {
+  // daily.time ya contiene la fecha local de la ciudad: no convertirla a un instante.
+  const [year, month, day] = date.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function showForecast(forecast) {
+  forecastDays.replaceChildren();
+
+  forecast.forEach((day) => {
+    const card = document.createElement('article');
+    card.className = 'forecast-card';
+    const heading = document.createElement('h3');
+    const date = document.createElement('time');
+    date.dateTime = day.date;
+    date.textContent = formatForecastDate(day.date);
+    heading.append(date);
+
+    const temperatures = document.createElement('dl');
+    temperatures.className = 'forecast-values';
+
+    for (const [label, value] of [['Máxima', day.maximumTemperature], ['Mínima', day.minimumTemperature]]) {
+      const row = document.createElement('div');
+      const term = document.createElement('dt');
+      const description = document.createElement('dd');
+      term.textContent = label;
+      description.textContent = `${value} °C`;
+      row.append(term, description);
+      temperatures.append(row);
+    }
+
+    card.append(heading, temperatures);
+    forecastDays.append(card);
+  });
+
+  forecastSection.hidden = false;
 }
 
 async function handleWeatherRequest() {
@@ -178,12 +222,13 @@ async function handleWeatherRequest() {
 
   clearWeather();
   setWeatherLoading(true);
-  setWeatherStatus(`Consultando el clima actual de ${getCityLabel(city)}…`);
+  setWeatherStatus(`Consultando el clima actual y el pronóstico de ${getCityLabel(city)}…`);
 
   try {
-    const current = await getCurrentWeather(city.latitude, city.longitude);
+    const { current, forecast } = await getWeather(city.latitude, city.longitude);
     showCurrentWeather(city, current);
-    setWeatherStatus('Clima actual actualizado.');
+    showForecast(forecast);
+    setWeatherStatus('Clima actual y pronóstico de tres días actualizados.');
   } catch (error) {
     setWeatherStatus(error instanceof Error ? error.message : 'No se pudo consultar el clima. Inténtalo de nuevo.', true);
   } finally {

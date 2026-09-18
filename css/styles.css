@@ -100,12 +100,39 @@ button {
   overflow-wrap: anywhere;
 }
 
-.weather-values dt {
+.weather-values dt,
+.forecast-values dt {
   font-weight: 600;
 }
 
-.weather-values dd {
+.weather-values dd,
+.forecast-values dd {
   margin: 0.25rem 0 0;
+}
+
+.forecast-days {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.forecast-card {
+  padding: 0.75rem;
+  background-color: #f5f6f8;
+  border: 1px solid #c8cdd2;
+  border-radius: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.forecast-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.forecast-values {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0;
 }
 
 footer {
@@ -123,7 +150,8 @@ footer {
     flex-direction: column;
   }
 
-  .weather-values {
+  .weather-values,
+  .forecast-days {
     grid-template-columns: 1fr;
   }
 }

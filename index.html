@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather App — Clima actual</title>
+    <title>Weather App — Clima actual y pronóstico</title>
     <link rel="stylesheet" href="./css/styles.css">
     <script type="module" src="./js/app.js"></script>
   </head>
   <body>
     <main>
       <h1>Weather App</h1>
-      <p>Busca una ciudad, selecciónala y consulta su clima actual.</p>
+      <p>Busca una ciudad, selecciónala y consulta su clima actual y el pronóstico de tres días.</p>
 
       <form id="city-search-form" novalidate aria-busy="false">
         <label for="city-query">Nombre de la ciudad</label>
@@ -34,7 +34,7 @@
         <label for="city-select">Ciudad, región y país</label>
         <select id="city-select" aria-describedby="selected-city"></select>
         <p id="selected-city" role="status" aria-live="polite" aria-atomic="true"></p>
-        <button id="weather-button" type="button" disabled aria-describedby="weather-status">Consultar clima actual</button>
+        <button id="weather-button" type="button" disabled aria-describedby="weather-status">Consultar clima y pronóstico</button>
       </section>
 
       <p id="weather-status" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -47,8 +47,13 @@
           <div><dt>Sensación térmica</dt><dd id="weather-apparent-temperature"></dd></div>
           <div><dt>Humedad</dt><dd id="weather-humidity"></dd></div>
           <div><dt>Velocidad del viento</dt><dd id="weather-wind-speed"></dd></div>
-          <div><dt>Código WMO</dt><dd id="weather-code"></dd></div>
+          <div><dt>Condición meteorológica</dt><dd id="weather-condition"></dd></div>
         </dl>
+      </section>
+
+      <section id="weather-forecast" aria-labelledby="forecast-heading" aria-busy="false" hidden>
+        <h2 id="forecast-heading">Pronóstico de tres días</h2>
+        <div id="forecast-days" class="forecast-days"></div>
       </section>
 
       <footer>

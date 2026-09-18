@@ -8,10 +8,6 @@ const CURRENT_WEATHER_UNITS = {
   weather_code: 'wmo code',
   wind_speed_10m: 'km/h',
 };
-const VALID_WEATHER_CODES = new Set([
-  0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65,
-  66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99,
-]);
 
 function isValidCity(city) {
   return city !== null
@@ -85,14 +81,38 @@ function validateCurrentWeather(data) {
     || current.relative_humidity_2m < 0
     || current.relative_humidity_2m > 100
     || current.wind_speed_10m < 0
-    || !VALID_WEATHER_CODES.has(current.weather_code)) {
+    || !Number.isInteger(current.weather_code)
+    || current.weather_code < 0) {
     throw new Error('El servicio meteorológico devolvió datos o unidades inválidos. Inténtalo de nuevo.');
   }
 
   return current;
 }
 
-export async function getCurrentWeather(latitude, longitude) {
+function validateDailyForecast(data) {
+  const daily = data.daily;
+
+  if (!isRecord(daily)
+    || !Array.isArray(daily.time)
+    || !Array.isArray(daily.temperature_2m_max)
+    || !Array.isArray(daily.temperature_2m_min)
+    || daily.time.length < 3
+    || daily.temperature_2m_max.length !== daily.time.length
+    || daily.temperature_2m_min.length !== daily.time.length
+    || !daily.time.every((date) => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
+    || !daily.temperature_2m_max.every(Number.isFinite)
+    || !daily.temperature_2m_min.every(Number.isFinite)) {
+    throw new Error('El servicio meteorológico devolvió un pronóstico incompleto o inválido. Inténtalo de nuevo.');
+  }
+
+  return daily.time.slice(0, 3).map((date, index) => ({
+    date,
+    maximumTemperature: daily.temperature_2m_max[index],
+    minimumTemperature: daily.temperature_2m_min[index],
+  }));
+}
+
+export async function getWeather(latitude, longitude) {
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90
     || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
     throw new Error('Las coordenadas de la ciudad no son válidas. Busca y selecciona la ciudad de nuevo.');
@@ -103,6 +123,8 @@ export async function getCurrentWeather(latitude, longitude) {
     latitude: String(latitude),
     longitude: String(longitude),
     current: Object.keys(CURRENT_WEATHER_UNITS).join(','),
+    daily: 'temperature_2m_max,temperature_2m_min',
+    forecast_days: '3',
     temperature_unit: 'celsius',
     wind_speed_unit: 'kmh',
     timezone: 'auto',
@@ -114,7 +136,10 @@ export async function getCurrentWeather(latitude, longitude) {
     network: 'No se pudo conectar con el servicio meteorológico. Revisa tu conexión e inténtalo de nuevo.',
     invalid: 'El servicio meteorológico devolvió una respuesta inválida. Inténtalo de nuevo.',
   });
-  return validateCurrentWeather(data);
+  return {
+    current: validateCurrentWeather(data),
+    forecast: validateDailyForecast(data),
+  };
 }
 
 async function requestJson(url, messages) {
