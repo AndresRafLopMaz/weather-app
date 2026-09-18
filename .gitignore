@@ -1,0 +1,10 @@
+# Archivos locales de variables de entorno y posibles secretos
+.env
+.env.*
+
+# Plantilla de configuración que sí puede versionarse
+!.env.example
+
+# Archivos generados por Windows
+Thumbs.db
+Desktop.ini
