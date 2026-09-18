@@ -11,6 +11,13 @@
 - No se utilizarán frameworks ni dependencias externas salvo que exista una necesidad técnica y se apruebe previamente.
 - Se priorizará una solución sencilla que pueda explicarse y mantenerse con facilidad.
 
+### Ejecución local
+
+- La aplicación debe ejecutarse localmente desde la raíz del proyecto con `py -m http.server 5500`.
+- Una vez iniciado el servidor, se accede desde `http://localhost:5500`.
+- El servidor local se detiene con `Ctrl + C` en la terminal.
+- No se deben instalar dependencias adicionales únicamente para servir la aplicación.
+
 ### Fuente de datos
 
 - La aplicación utilizará Open-Meteo como fuente de información meteorológica.
