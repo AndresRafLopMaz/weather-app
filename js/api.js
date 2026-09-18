@@ -1,5 +1,17 @@
 const GEOCODING_ENDPOINT = 'https://geocoding-api.open-meteo.com/v1/search';
+const WEATHER_ENDPOINT = 'https://api.open-meteo.com/v1/forecast';
 const REQUEST_TIMEOUT_MS = 10000;
+const CURRENT_WEATHER_UNITS = {
+  temperature_2m: '°C',
+  apparent_temperature: '°C',
+  relative_humidity_2m: '%',
+  weather_code: 'wmo code',
+  wind_speed_10m: 'km/h',
+};
+const VALID_WEATHER_CODES = new Set([
+  0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65,
+  66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99,
+]);
 
 function isValidCity(city) {
   return city !== null
@@ -46,6 +58,66 @@ export async function searchCities(query) {
     format: 'json',
   }).toString();
 
+  const data = await requestJson(url, {
+    http: 'El servicio de ciudades no pudo completar la búsqueda',
+    timeout: 'La búsqueda tardó demasiado. Revisa tu conexión e inténtalo de nuevo.',
+    network: 'No se pudo conectar con el servicio de ciudades. Revisa tu conexión e inténtalo de nuevo.',
+    invalid: 'El servicio de ciudades devolvió una respuesta inválida. Inténtalo de nuevo.',
+  });
+  return validateResults(data);
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validateCurrentWeather(data) {
+  if (!isRecord(data) || data.error || !isRecord(data.current) || !isRecord(data.current_units)) {
+    throw new Error('El servicio meteorológico devolvió una respuesta inválida. Inténtalo de nuevo.');
+  }
+
+  const current = data.current;
+  const validFields = Object.entries(CURRENT_WEATHER_UNITS).every(([field, unit]) => (
+    Number.isFinite(current[field]) && data.current_units[field] === unit
+  ));
+
+  if (!validFields
+    || current.relative_humidity_2m < 0
+    || current.relative_humidity_2m > 100
+    || current.wind_speed_10m < 0
+    || !VALID_WEATHER_CODES.has(current.weather_code)) {
+    throw new Error('El servicio meteorológico devolvió datos o unidades inválidos. Inténtalo de nuevo.');
+  }
+
+  return current;
+}
+
+export async function getCurrentWeather(latitude, longitude) {
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90
+    || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    throw new Error('Las coordenadas de la ciudad no son válidas. Busca y selecciona la ciudad de nuevo.');
+  }
+
+  const url = new URL(WEATHER_ENDPOINT);
+  url.search = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    current: Object.keys(CURRENT_WEATHER_UNITS).join(','),
+    temperature_unit: 'celsius',
+    wind_speed_unit: 'kmh',
+    timezone: 'auto',
+  }).toString();
+
+  const data = await requestJson(url, {
+    http: 'El servicio meteorológico no pudo completar la consulta',
+    timeout: 'La consulta del clima tardó demasiado. Revisa tu conexión e inténtalo de nuevo.',
+    network: 'No se pudo conectar con el servicio meteorológico. Revisa tu conexión e inténtalo de nuevo.',
+    invalid: 'El servicio meteorológico devolvió una respuesta inválida. Inténtalo de nuevo.',
+  });
+  return validateCurrentWeather(data);
+}
+
+async function requestJson(url, messages) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -53,22 +125,21 @@ export async function searchCities(query) {
     const response = await fetch(url, { signal: controller.signal });
 
     if (!response.ok) {
-      throw new Error(`El servicio de ciudades no pudo completar la búsqueda (HTTP ${response.status}). Inténtalo de nuevo.`);
+      throw new Error(`${messages.http} (HTTP ${response.status}). Inténtalo de nuevo.`);
     }
 
-    const data = await response.json();
-    return validateResults(data);
+    return await response.json();
   } catch (error) {
     if (controller.signal.aborted) {
-      throw new Error('La búsqueda tardó demasiado. Revisa tu conexión e inténtalo de nuevo.');
+      throw new Error(messages.timeout);
     }
 
     if (error instanceof TypeError) {
-      throw new Error('No se pudo conectar con el servicio de ciudades. Revisa tu conexión e inténtalo de nuevo.');
+      throw new Error(messages.network);
     }
 
     if (error instanceof SyntaxError) {
-      throw new Error('El servicio de ciudades devolvió una respuesta inválida. Inténtalo de nuevo.');
+      throw new Error(messages.invalid);
     }
 
     throw error;

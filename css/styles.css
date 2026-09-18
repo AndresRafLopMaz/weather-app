@@ -70,10 +70,11 @@ button {
 
 :disabled {
   opacity: 0.65;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
-#search-status {
+#search-status,
+#weather-status {
   min-height: 1.5em;
 }
 
@@ -81,8 +82,30 @@ button {
   color: #a51d23;
 }
 
-#selected-city {
+#selected-city,
+#weather-city {
   overflow-wrap: anywhere;
+}
+
+.weather-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.weather-values div {
+  padding: 0.75rem;
+  background-color: #f5f6f8;
+  border-radius: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.weather-values dt {
+  font-weight: 600;
+}
+
+.weather-values dd {
+  margin: 0.25rem 0 0;
 }
 
 footer {
@@ -98,5 +121,9 @@ footer {
 
   .search-controls {
     flex-direction: column;
+  }
+
+  .weather-values {
+    grid-template-columns: 1fr;
   }
 }

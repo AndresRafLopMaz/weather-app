@@ -1,4 +1,4 @@
-import { searchCities } from './api.js';
+import { searchCities, getCurrentWeather } from './api.js';
 
 const searchForm = document.querySelector('#city-search-form');
 const cityInput = document.querySelector('#city-query');
@@ -7,9 +7,19 @@ const searchStatus = document.querySelector('#search-status');
 const resultsSection = document.querySelector('#city-results');
 const citySelect = document.querySelector('#city-select');
 const selectedCityDetails = document.querySelector('#selected-city');
+const weatherButton = document.querySelector('#weather-button');
+const weatherStatus = document.querySelector('#weather-status');
+const weatherSection = document.querySelector('#current-weather');
+const weatherCity = document.querySelector('#weather-city');
+const weatherTemperature = document.querySelector('#weather-temperature');
+const weatherApparentTemperature = document.querySelector('#weather-apparent-temperature');
+const weatherHumidity = document.querySelector('#weather-humidity');
+const weatherWindSpeed = document.querySelector('#weather-wind-speed');
+const weatherCode = document.querySelector('#weather-code');
 
 let cities = [];
 let isLoading = false;
+let isWeatherLoading = false;
 
 function setStatus(message, isError = false) {
   searchStatus.textContent = message;
@@ -18,10 +28,40 @@ function setStatus(message, isError = false) {
 
 function setLoading(loading) {
   isLoading = loading;
-  cityInput.disabled = loading;
-  searchButton.disabled = loading;
   searchButton.textContent = loading ? 'Buscando…' : 'Buscar';
   searchForm.setAttribute('aria-busy', String(loading));
+  updateControls();
+}
+
+function updateControls() {
+  const busy = isLoading || isWeatherLoading;
+  cityInput.disabled = busy;
+  searchButton.disabled = busy;
+  citySelect.disabled = busy;
+  weatherButton.disabled = busy || !getSelectedCity();
+}
+
+function setWeatherStatus(message, isError = false) {
+  weatherStatus.textContent = message;
+  weatherStatus.classList.toggle('error', isError);
+}
+
+function setWeatherLoading(loading) {
+  isWeatherLoading = loading;
+  weatherButton.textContent = loading ? 'Consultando…' : 'Consultar clima actual';
+  weatherSection.setAttribute('aria-busy', String(loading));
+  updateControls();
+}
+
+function clearWeather() {
+  weatherSection.hidden = true;
+  weatherCity.textContent = '';
+  weatherTemperature.textContent = '';
+  weatherApparentTemperature.textContent = '';
+  weatherHumidity.textContent = '';
+  weatherWindSpeed.textContent = '';
+  weatherCode.textContent = '';
+  setWeatherStatus('');
 }
 
 function clearResults() {
@@ -29,6 +69,8 @@ function clearResults() {
   citySelect.replaceChildren();
   selectedCityDetails.textContent = '';
   resultsSection.hidden = true;
+  clearWeather();
+  updateControls();
 }
 
 function getCityLabel(city) {
@@ -37,12 +79,18 @@ function getCityLabel(city) {
   return `${city.name}, ${region}, ${country}`;
 }
 
+function getSelectedCity() {
+  return citySelect.value === '' ? undefined : cities[Number(citySelect.value)];
+}
+
 function showSelectedCity() {
-  const city = citySelect.value === '' ? undefined : cities[Number(citySelect.value)];
+  const city = getSelectedCity();
+  clearWeather();
 
   selectedCityDetails.textContent = city
     ? `Ciudad seleccionada: ${getCityLabel(city)}. Latitud: ${city.latitude}. Longitud: ${city.longitude}.`
     : 'Selecciona una ciudad para ver sus coordenadas.';
+  updateControls();
 }
 
 function showResults() {
@@ -70,7 +118,7 @@ function showResults() {
 async function handleSearch(event) {
   event.preventDefault();
 
-  if (isLoading) {
+  if (isLoading || isWeatherLoading) {
     return;
   }
 
@@ -108,5 +156,41 @@ async function handleSearch(event) {
   }
 }
 
+function showCurrentWeather(city, current) {
+  weatherCity.textContent = getCityLabel(city);
+  weatherTemperature.textContent = `${current.temperature_2m} °C`;
+  weatherApparentTemperature.textContent = `${current.apparent_temperature} °C`;
+  weatherHumidity.textContent = `${current.relative_humidity_2m} %`;
+  weatherWindSpeed.textContent = `${current.wind_speed_10m} km/h`;
+  weatherCode.textContent = String(current.weather_code);
+  weatherSection.hidden = false;
+}
+
+async function handleWeatherRequest() {
+  if (isLoading || isWeatherLoading) {
+    return;
+  }
+
+  const city = getSelectedCity();
+  if (!city) {
+    return;
+  }
+
+  clearWeather();
+  setWeatherLoading(true);
+  setWeatherStatus(`Consultando el clima actual de ${getCityLabel(city)}…`);
+
+  try {
+    const current = await getCurrentWeather(city.latitude, city.longitude);
+    showCurrentWeather(city, current);
+    setWeatherStatus('Clima actual actualizado.');
+  } catch (error) {
+    setWeatherStatus(error instanceof Error ? error.message : 'No se pudo consultar el clima. Inténtalo de nuevo.', true);
+  } finally {
+    setWeatherLoading(false);
+  }
+}
+
 searchForm.addEventListener('submit', handleSearch);
 citySelect.addEventListener('change', showSelectedCity);
+weatherButton.addEventListener('click', handleWeatherRequest);

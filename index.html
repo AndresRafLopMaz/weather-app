@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather App — Buscar ciudad</title>
+    <title>Weather App — Clima actual</title>
     <link rel="stylesheet" href="./css/styles.css">
     <script type="module" src="./js/app.js"></script>
   </head>
   <body>
     <main>
       <h1>Weather App</h1>
-      <p>Busca una ciudad para conocer sus coordenadas.</p>
+      <p>Busca una ciudad, selecciónala y consulta su clima actual.</p>
 
       <form id="city-search-form" novalidate aria-busy="false">
         <label for="city-query">Nombre de la ciudad</label>
@@ -34,10 +34,25 @@
         <label for="city-select">Ciudad, región y país</label>
         <select id="city-select" aria-describedby="selected-city"></select>
         <p id="selected-city" role="status" aria-live="polite" aria-atomic="true"></p>
+        <button id="weather-button" type="button" disabled aria-describedby="weather-status">Consultar clima actual</button>
+      </section>
+
+      <p id="weather-status" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section id="current-weather" aria-labelledby="weather-heading" aria-busy="false" hidden>
+        <h2 id="weather-heading">Clima actual</h2>
+        <p id="weather-city"></p>
+        <dl class="weather-values">
+          <div><dt>Temperatura</dt><dd id="weather-temperature"></dd></div>
+          <div><dt>Sensación térmica</dt><dd id="weather-apparent-temperature"></dd></div>
+          <div><dt>Humedad</dt><dd id="weather-humidity"></dd></div>
+          <div><dt>Velocidad del viento</dt><dd id="weather-wind-speed"></dd></div>
+          <div><dt>Código WMO</dt><dd id="weather-code"></dd></div>
+        </dl>
       </section>
 
       <footer>
-        <p>Datos de geocodificación de <a href="https://open-meteo.com/">Open-Meteo</a>.</p>
+        <p>Datos de geocodificación y meteorología de <a href="https://open-meteo.com/">Open-Meteo</a>.</p>
       </footer>
       <noscript>Activa JavaScript en el navegador para buscar ciudades.</noscript>
     </main>
