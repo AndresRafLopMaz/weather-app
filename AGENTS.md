@@ -44,3 +44,20 @@
 - No agregar dependencias, frameworks o configuraciones nuevas sin justificar primero su necesidad.
 - Revisar y probar cada cambio antes de continuar con la siguiente funcionalidad.
 - La estructura definitiva de archivos y las decisiones de arquitectura se definirán y revisarán en modo Plan antes de comenzar la implementación.
+
+### Arquitectura aprobada
+
+- La aplicación será una aplicación web de una sola página ejecutada directamente en el navegador.
+- La estructura principal será:
+  - `index.html`: estructura semántica de la interfaz.
+  - `css/styles.css`: estilos, diseño responsive y estados visuales.
+  - `js/app.js`: coordinación del flujo, eventos y actualización del DOM.
+  - `js/api.js`: construcción de URLs, peticiones a Open-Meteo, validación HTTP y control de tiempo límite.
+  - `js/weather-codes.js`: correspondencia entre códigos WMO y descripciones meteorológicas en español.
+  - `README.md`: instrucciones de ejecución, decisiones técnicas y pruebas manuales.
+- JavaScript utilizará módulos nativos del navegador y no requerirá herramientas de compilación.
+- Las búsquedas se validarán después de aplicar `trim()` y requerirán un mínimo de 3 caracteres.
+- Si la geocodificación devuelve varias ciudades, el usuario podrá seleccionar la coincidencia correcta en lugar de elegir automáticamente el primer resultado.
+- Las consultas de red tendrán manejo explícito de errores y un tiempo límite mediante `AbortController`.
+- El pronóstico mostrará tres días y utilizará la zona horaria correspondiente a la ubicación consultada.
+- La implementación se realizará por etapas y cada incremento funcional será revisado antes de continuar.
